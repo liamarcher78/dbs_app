@@ -1,8 +1,13 @@
 <?php
 require_once('../classes/database.php');
- 
 $con = new database();
+
+$allusers = $con->viewBorrowerUser();
+
+$borrowerCreateStatus = null;
+$borrowerCreateMessage = '';
  
+
 if(isset($_POST['add_borrower'])) {
 
 // 1. Collect and validate inputs from user
@@ -17,6 +22,8 @@ if(isset($_POST['add_borrower'])) {
 // 2. Hashed the password
   $password_hash = password_hash($temp_password, PASSWORD_DEFAULT);
 
+
+  try {
 // 3. Insert into Users table and get a new user_id
   $user_id = $con->insertUser($email, $password_hash, $is_active);
 
@@ -26,16 +33,42 @@ if(isset($_POST['add_borrower'])) {
 // 5. Insert into BorrowerUser mapping(linking) table
   $con->insertBorrowerUser($user_id, $borrower_id);
 
+  $borrowerCreateStatus = 'success';
+  $borrowerCreateMessage = 'Borrower created successfully.';
 
-  
+ } catch (Exception $e) {
 
+ $borrowerCreateStatus = 'error';
+ $borrowerCreateMessage = 'Error creating borrower.';
+ }
 }
- 
- 
+
+$borrowerAddressStatus = null;
+$borrowerAddressMessage = '';
+
+if(isset($_POST['add_address'])) {
+
+  $borrower_id = $_POST['borrower_id'];
+  $house_number = $_POST['ba_house_number'];
+  $street = $_POST['ba_street'];
+  $barangay = $_POST['ba_barangay'];
+  $city = $_POST['ba_city'];
+  $province = $_POST['ba_province'];
+  $postal = $_POST['ba_postal_code'];
+  $is_primary = $_POST['is_primary'];
+
+  try{
+  $ba_id = $con->insertBorrowerAddress($borrower_id, $house_number, $street, $barangay, $city, $province, $postal, $is_primary);
+  $borrowerAddressStatus = 'success';
+$borrowerAddressMessage = 'The address was successfully inserted.';
+
+  }catch (Exception $e) {
+  $borrowerAddressStatus = 'error';
+$borrowerAddressMessage = 'Error inserting address.';
+
+  }
+}
 ?>
-
-
-
 
 <!doctype html>
 <html lang="en">
@@ -45,7 +78,10 @@ if(isset($_POST['add_borrower'])) {
   <title>Borrowers — Admin</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="../assets/css/style.css">
-  <link rel="stylesheet" href="../bootstrap-5.3.3-dist/css/bootstrap.css">
+
+  <link rel="stylesheet" href="../bootstrap-5.3.3-dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="../sweetalert/dist/sweetalert2.css">
+
 
 </head>
 <body>
@@ -195,11 +231,11 @@ if(isset($_POST['add_borrower'])) {
                 <label class="form-label">Borrower</label>
                 <select class="form-select" name="borrower_id" required>
                   <option value="">Select borrower</option>
-                  <option value="1">Juan Dela Cruz</option>
-                  <option value="2">Maria Santos</option>
-                  <option value="3">Mark Reyes</option>
-                  <option value="4">Ana Bautista</option>
-                  <option value="6">Grace Mendoza</option>
+                  <?php
+                  foreach($allusers as $borrower){
+                  echo '<option value="'.$borrower['borrower_id'] .'">'.'['.$borrower['borrower_id'].'] '.$borrower['borrower_firstname']. ' '. $borrower['borrower_lastname'].'</option>';
+                  }
+                  ?>
                 </select>
               </div>
               <div class="col-6">
@@ -234,7 +270,7 @@ if(isset($_POST['add_borrower'])) {
                 </select>
               </div>
               <div class="col-12">
-                <button class="btn btn-outline-primary w-100" type="submit">Add Address</button>
+                <button name="add_address" class="btn btn-outline-primary w-100" type="submit">Add Address</button>
               </div>
             </form>
           </div>
@@ -273,6 +309,54 @@ if(isset($_POST['add_borrower'])) {
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+<script src="../sweetalert/dist/sweetalert2.js"></script>
+
+<script>
+
+  const createStatus = <?php echo json_encode($borrowerCreateStatus)?>;
+  const createMessage = <?php echo json_encode($borrowerCreateMessage)?>;
+
+  if(createStatus == 'success'){
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: createMessage,
+      confirmButtonText: 'OK'
+    });
+  } else if(createStatus == 'error'){
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: createMessage,
+      confirmButtonText: 'OK'
+    });
+  }
+
+</script>
+
+<script>
+
+  const createStatus1 = <?php echo json_encode($borrowerAddressStatus)?>;
+  const createMessage1 = <?php echo json_encode($borrowerAddressMessage)?>;
+
+  if(createStatus1 == 'success'){
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: createMessage1,
+      confirmButtonText: 'OK'
+    });
+  } else if(createStatus1 == 'error'){
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: createMessage1,
+      confirmButtonText: 'OK'
+    });
+  }
+
+</script>
+
 </body>
 </html>
