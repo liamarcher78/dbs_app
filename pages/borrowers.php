@@ -59,12 +59,13 @@ if(isset($_POST['add_address'])) {
 
   try{
   $ba_id = $con->insertBorrowerAddress($borrower_id, $house_number, $street, $barangay, $city, $province, $postal, $is_primary);
+
   $borrowerAddressStatus = 'success';
-$borrowerAddressMessage = 'The address was successfully inserted.';
+  $borrowerAddressMessage = 'The address was successfully inserted.';
 
   }catch (Exception $e) {
   $borrowerAddressStatus = 'error';
-$borrowerAddressMessage = 'Error inserting address.';
+  $borrowerAddressMessage = 'Error inserting address.';
 
   }
 }
