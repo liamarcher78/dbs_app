@@ -1,12 +1,68 @@
+<?php
+require_once('../classes/database.php');
+$con = new database();
+ 
+$allusers = $con->viewBorrowerUser();
+$allbook = $con->viewBook();
+$borrowerAddressStatus = null;
+$borrowerCreateMessage = '';
+ 
+if(isset($_POST['add_books'])){
+ 
+ 
+ 
+// 1. Collect and validate inputs from user
+  $title = $_POST['book_title'];
+  $isbn = $_POST['book_isbn'];
+  $year = $_POST['book_publication_year'];
+  $edition = $_POST['book_edition'];
+  $publisher = $_POST['book_publisher'];
+ 
+try {
+// 5. Insert into BorrowerUser mapping(linking) table
+$con->insertBooks($title,$isbn,$year,$edition,$publisher);
+ 
+$borrowerAddressStatus = 'success';
+$borrowerCreateMessage = 'Borrower created succesfully';
+ 
+}catch(Exception $e) {
+  $borrowerAddressStatus = 'error';
+  $borrowerCreateMessage = $e->getMessage();
+}
+}
+ 
+$copyCreateStatus = null;
+$copyCreateMessage = '';
+ 
+if(isset($_POST['add_copy'])) {
+ 
+  $book_id = $_POST['book_id'];
+  $status = $_POST['status'];
+ 
+ 
+  try{
+  $copy_id = $con->insertBookCopy($book_id, $status);
+ 
+  $copyCreateStatus = 'success';
+  $copyCreateMessage = 'Copy added successfully.';
+ 
+  }catch (Exception $e) {
+  $copyCreateStatus = 'error';
+  $copyCreateMessage = $e->getMessage();  
+  }
+}
+?>
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Books — Admin</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="stylesheet" href="../bootstrap-5.3.3-dist/css/bootstrap.css">
+  <link rel="stylesheet" href="../assets/css/style.css">
+ 
+ 
+  <link rel="stylesheet" href="../sweetalert/dist/sweetalert2.css">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg bg-white border-bottom sticky-top">
@@ -31,16 +87,16 @@
     </div>
   </div>
 </nav>
-
+ 
 <main class="container py-4">
   <div class="row g-3">
     <div class="col-12 col-lg-4">
       <div class="card p-4">
         <h5 class="mb-1">Add Book</h5>
         <p class="small-muted mb-3">Creates a row in <b>Books</b>.</p>
-
+ 
         <!-- Later in PHP: action="../php/books/create.php" method="POST" -->
-        <form action="#" method="POST">
+        <form action="" method="POST">
           <div class="mb-3">
             <label class="form-label">Title</label>
             <input class="form-control" name="book_title" required>
@@ -61,10 +117,10 @@
             <label class="form-label">Publisher</label>
             <input class="form-control" name="book_publisher" placeholder="optional">
           </div>
-          <button class="btn btn-primary w-100" type="submit">Save Book</button>
+          <button type="submit" name="add_books" class="btn btn-outline-primary w-100">Save Book</button>
         </form>
       </div>
-
+ 
       <div class="card p-4 mt-3">
         <h6 class="mb-2">Add Copy</h6>
         <p class="small-muted mb-3">Creates a row in <b>BookCopy</b>.</p>
@@ -74,11 +130,11 @@
             <label class="form-label">Book</label>
             <select class="form-select" name="book_id" required>
               <option value="">Select book</option>
-              <option value="1">Noli Me Tangere</option>
-              <option value="2">El Filibusterismo</option>
-              <option value="3">Mga Ibong Mandaragit</option>
-              <option value="4">Smaller and Smaller Circles</option>
-              <option value="5">Dekada ’70</option>
+              <?php
+                  foreach($allbook as $book){
+                  echo '<option value="'.$book['book_id'] .'">'.'['.$book['book_id'].'] '.$book['book_title'].'</option>';
+                  }
+                  ?>
             </select>
           </div>
           <div class="mb-3">
@@ -91,11 +147,11 @@
               <option value="REPAIR">REPAIR</option>
             </select>
           </div>
-          <button class="btn btn-outline-primary w-100" type="submit">Add Copy</button>
+          <button name="add_copy" class="btn btn-outline-primary w-100" type="submit">Add Copy</button>
         </form>
       </div>
     </div>
-
+ 
     <div class="col-12 col-lg-8">
       <div class="card p-4">
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
@@ -108,7 +164,7 @@
             <button class="btn btn-outline-secondary">Search</button>
           </div>
         </div>
-
+ 
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead class="table-light">
@@ -124,38 +180,33 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>1</td>
-                <td>Noli Me Tangere</td>
-                <td>9789710810736</td>
-                <td>1887</td>
-                <td>National Book Store</td>
-                <td>3</td>
-                <td><span class="badge text-bg-success">2</span></td>
-                <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editBookModal">Edit</button>
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
-                </td>
-              </tr>
-              <tr>
-                <td>4</td>
-                <td>Smaller and Smaller Circles</td>
-                <td>9789712721768</td>
-                <td>2002</td>
-                <td>Ateneo de Manila University Press</td>
-                <td>2</td>
-                <td><span class="badge text-bg-warning">1</span></td>
-                <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editBookModal">Edit</button>
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
-                </td>
-              </tr>
-            </tbody>
+         <?php
+          $viewcopies = $con->viewCopies();
+          foreach($viewcopies as $vw){
+ 
+ 
+ 
+          echo'<tr>';
+          echo'<td>'.$vw['book_id'].'</td>';
+          echo'<td>'.$vw['book_title'].'</td>';
+          echo'<td>'.$vw['book_isbn'].'</td>';
+          echo'<td>'.$vw['book_publication_year'].'</td>';
+          echo'<td>'.$vw['book_publisher'].'</td>';
+          echo'<td>'.$vw['Copies'].'</td>';
+          echo'<td>'.$vw['Available_Copies'].'</td>';
+          echo'<td class="text-end">';
+          echo'    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editBookModal">Edit</button>';
+          echo'<button class="btn btn-sm btn-outline-danger">Delete</button>';
+          echo'  </td>';
+          echo'</tr>';
+          }
+ 
+         ?>     </tbody>
           </table>
         </div>
-
+ 
         <hr class="my-4">
-
+ 
         <div class="row g-3">
           <div class="col-12 col-lg-6">
             <div class="border rounded p-3">
@@ -185,7 +236,7 @@
               <div class="small-muted mt-2">Unique constraint prevents duplicate (book_id, author_id).</div>
             </div>
           </div>
-
+ 
           <div class="col-12 col-lg-6">
             <div class="border rounded p-3">
               <h6 class="mb-2">Assign Genre to Book</h6>
@@ -214,12 +265,12 @@
             </div>
           </div>
         </div>
-
+ 
       </div>
     </div>
   </div>
 </main>
-
+ 
 <!-- Edit Book Modal (UI only) -->
 <div class="modal fade" id="editBookModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -249,7 +300,54 @@
     </div>
   </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+ 
+<script src="../bootstrap-5.3.3-dist/js/bootstrap.min.js"></script>
+<script src="../sweetalert/dist/sweetalert2.js"></script>
+ 
+<script>
+ 
+const createStatus = <?php echo json_encode($borrowerAddressStatus)?>;
+const createMessage = <?php echo json_encode($borrowerCreateMessage)?>;
+ 
+ 
+if (createStatus == 'success') {
+  swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: createMessage,
+    confirmButtonText: 'OK',
+  });
+} else if (createStatus == 'success') {
+  swal.fire({
+    icon: 'success',
+    title: 'Success',
+    text: createMessage,
+    confirmButtonText: 'OK',
+  })
+}
+ 
+</script>
+<script>
+ 
+  const createStatus1 = <?php echo json_encode($copyCreateStatus)?>;
+  const createMessage1 = <?php echo json_encode($copyCreateMessage)?>;
+ 
+  if(createStatus1 == 'success'){
+    Swal.fire({
+      icon: 'success',
+      title: 'Success',
+      text: createMessage1,
+      confirmButtonText: 'OK'
+    });
+  } else if(createStatus1 == 'error'){
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: createMessage1,
+      confirmButtonText: 'OK'
+    });
+  }
+ 
+</script>
 </body>
 </html>
